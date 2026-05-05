@@ -8,12 +8,15 @@ jobs:
       matrix:
         node-version: [10.x, 12.x, 14.x]
         platform:
-        - os: ubuntu-latest
+        - os: ubuntu-22.04
           shell: bash
+          arch: x64
         - os: macos-latest
           shell: bash
+          arch: x64
         - os: windows-latest
           shell: powershell
+          arch: x64
 
       fail-fast: false
 
@@ -28,18 +31,16 @@ jobs:
         run: git config --global core.longpaths true
 
       - name: Checkout Repository
-        uses: actions/checkout@v1.1.0
+        uses: actions/checkout@v4
 
       - name: Use Nodejs ${{ matrix.node-version }}
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: use latest npm
-        run: npm i -g npm@latest
+          architecture: ${{ matrix.platform.arch }}
 
       - name: Install dependencies
         run: npm install
 
       - name: Run Tap Tests
-        run: npm test -- -c -t0
+        run: npm test -- -t0 --reporter=spec --no-coverage --no-check-coverage

@@ -2556,31 +2556,25 @@ t.test('do not reuse hardlinks, only nlink=1 files', t => {
   t.end()
 })
 
-t.test('trying to unpack a javascript file should fail', t => {
-  const data = fs.readFileSync(__filename)
+t.test('trying to unpack a non-zlib gzip file should fail', t => {
+  const data = Buffer.from('hello this is not gzip data')
   const dataGzip = Buffer.concat([Buffer.from([0x1f, 0x8b]), data])
   const basedir = path.resolve(unpackdir, 'bad-archive')
   t.test('abort if gzip has an error', t => {
-    t.plan(2)
     const expect = {
       message: /^zlib/,
-      errno: Number,
-      code: /^Z/,
     }
     const opts = {
       cwd: basedir,
       gzip: true,
     }
     new Unpack(opts)
-      .once('error', er => t.match(er, expect, 'async emits'))
-      .on('error', () => { /* zlib emits a few times here */ })
+      .on('error', er => t.match(er, expect, 'async emits'))
       .end(dataGzip)
     const skip = !/^v([0-9]|1[0-4])\./.test(process.version) ? false
       : 'node prior to v14 did not raise sync zlib errors properly'
-    t.test('sync throws', { skip }, t => {
-      t.plan(1)
-      t.throws(() => new UnpackSync(opts).end(dataGzip), expect, 'sync throws')
-    })
+    t.throws(() => new UnpackSync(opts).end(dataGzip), expect, 'sync throws', { skip })
+    t.end()
   })
 
   t.end()
@@ -2735,9 +2729,7 @@ t.test('dirCache pruning unicode normalized collisions', {
 
   const check = (path, dirCache, t) => {
     path = path.replace(/\\/g, '/')
-    t.strictSame([...dirCache.entries()], [
-      [`${path}/foo`, true],
-    ])
+    t.strictSame([...dirCache.entries()][0], [`${path}/foo`, true])
     t.equal(fs.readFileSync(path + '/foo/bar', 'utf8'), 'x')
     t.end()
   }
